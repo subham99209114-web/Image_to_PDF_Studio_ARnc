@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image to PDF Studio.ARnc</title>
+<meta name="description" content="Advanced image to PDF converter with multi-image support, page controls, watermark, quality and professional PDF options.">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#eef2ff;--card:rgba(255,255,255,.94);--text:#18202a;--muted:#687385;--line:#dfe5ef;
+  --primary:#2563eb;--primary2:#1d4ed8;--danger:#dc2626;--shadow:0 14px 40px rgba(15,23,42,.11);
+  --radius:18px;--page-bg:linear-gradient(135deg,#eef2ff 0%,#f8fafc 45%,#e0f2fe 100%);
+  --top-gradient:linear-gradient(135deg,#111827 0%,#1d4ed8 52%,#7c3aed 100%);
+}
+body{background:var(--page-bg);transition:background .25s ease,color .25s ease}
+body.theme-dark{--bg:#07111f;--card:rgba(15,23,42,.94);--text:#e5e7eb;--muted:#aab4c5;--line:#29364a;--page-bg:linear-gradient(135deg,#020617,#0f172a 48%,#172554);--shadow:0 16px 45px rgba(0,0,0,.35)}
+body.theme-ocean{--bg:#ecfeff;--primary:#0891b2;--primary2:#0e7490;--page-bg:linear-gradient(135deg,#cffafe,#eff6ff 48%,#dbeafe);--top-gradient:linear-gradient(135deg,#164e63,#0891b2,#2563eb)}
+body.theme-sunset{--bg:#fff7ed;--primary:#ea580c;--primary2:#c2410c;--page-bg:linear-gradient(135deg,#fff7ed,#fef2f2 48%,#fce7f3);--top-gradient:linear-gradient(135deg,#7c2d12,#ea580c,#be185d)}
+body.theme-emerald{--bg:#ecfdf5;--primary:#059669;--primary2:#047857;--page-bg:linear-gradient(135deg,#ecfdf5,#f0fdf4 48%,#d1fae5);--top-gradient:linear-gradient(135deg,#064e3b,#059669,#0f766e)}
+body.theme-dark .btn:not(.primary):not(.dark){background:#172033;color:#e5e7eb;border-color:#334155}
+body.theme-dark input[type=text],body.theme-dark input[type=number],body.theme-dark select,body.theme-dark textarea{background:#0f172a;color:#e5e7eb;border-color:#334155}
+body.theme-dark .preview-wrap{background:#111827}
+body.theme-dark .feature,body.theme-dark .thumb{background:#0f172a}
+body.theme-dark .note{background:#111827;color:#aab4c5}
+body.theme-dark .upload{background:#0c2745;border-color:#2563eb}
+
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);color:var(--text)}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+.app{max-width:1500px;margin:auto;padding:18px}
+.topbar{background:var(--top-gradient);color:white;border-radius:22px;padding:22px 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;box-shadow:var(--shadow)}
+.brand h1{margin:0;font-size:25px}.brand p{margin:5px 0 0;color:#cbd5e1;font-size:13px}
+.top-actions{display:flex;gap:9px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:white;color:var(--text);padding:10px 14px;border-radius:11px;font-weight:700}
+.btn:hover{transform:translateY(-1px)}.btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+.btn.dark{background:#0f172a;color:#fff;border-color:#334155}.btn.danger{background:#fee2e2;color:#991b1b;border-color:#fecaca}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr) 330px;gap:16px;margin-top:16px}
+.card{background:var(--card);backdrop-filter:blur(10px);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.panel{padding:16px}.panel h2{font-size:15px;margin:0 0 13px}.panel h3{font-size:13px;margin:17px 0 9px;color:#334155}
+.upload{border:2px dashed #93c5fd;background:#eff6ff;border-radius:16px;padding:24px 12px;text-align:center}
+.upload strong{display:block;margin-bottom:5px}.upload small{color:var(--muted)}
+input[type=file]{display:none}
+.drop-icon{font-size:35px;margin-bottom:6px}
+.field{margin:10px 0}.field label{display:block;font-size:12px;font-weight:800;color:#475569;margin-bottom:5px}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff;outline:none}
+textarea{min-height:70px;resize:vertical}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px}
+.check{display:flex;align-items:center;gap:8px;font-size:13px;margin:9px 0}.check input{accent-color:var(--primary)}
+.range-line{display:flex;align-items:center;gap:8px}.range-line input{flex:1}.value{min-width:44px;text-align:right;font-size:12px;font-weight:700}
+.workspace{min-height:680px;padding:16px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.toolbar .tools{display:flex;gap:7px;flex-wrap:wrap}
+.status{font-size:12px;color:var(--muted)}
+.preview-wrap{min-height:610px;background:#e8edf5;border-radius:15px;padding:18px;overflow:auto;display:flex;justify-content:center;align-items:flex-start}
+.pages-preview{display:flex;flex-direction:column;gap:18px;width:min(100%,760px)}
+.page-preview{background:white;box-shadow:0 8px 28px rgba(15,23,42,.16);position:relative;overflow:hidden;margin:auto}
+.page-preview img{position:absolute;display:block;object-fit:contain}
+.empty{text-align:center;color:#64748b;padding:110px 20px}.empty b{font-size:20px;color:#334155}
+.thumbs{display:flex;flex-direction:column;gap:8px;max-height:430px;overflow:auto}
+.thumb{display:grid;grid-template-columns:62px 1fr auto;align-items:center;gap:8px;padding:8px;border:1px solid var(--line);border-radius:11px;background:#fff}
+.thumb.active{border-color:#60a5fa;background:#eff6ff}.thumb img{width:62px;height:55px;object-fit:cover;border-radius:7px;background:#eef2f7}
+.thumb-info{min-width:0}.thumb-info b{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.thumb-info small{font-size:10px;color:var(--muted)}
+.iconbtn{border:0;background:#f1f5f9;border-radius:8px;padding:6px;font-weight:800}.iconbtn:hover{background:#e2e8f0}
+.feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:16px}
+.feature{padding:14px;background:white;border:1px solid var(--line);border-radius:14px}.feature b{font-size:13px}.feature p{font-size:11px;color:var(--muted);margin:5px 0 0;line-height:1.45}
+.note{font-size:11px;color:var(--muted);line-height:1.5;background:#f8fafc;border-radius:10px;padding:10px;margin-top:10px}
+footer{text-align:center;color:#64748b;font-size:12px;padding:18px}
+@media(max-width:1120px){.layout{grid-template-columns:280px minmax(0,1fr)}.right{grid-column:1/-1}.right .panel{display:grid;grid-template-columns:1fr 1fr;gap:12px}.right .panel>h2{grid-column:1/-1}}
+@media(max-width:760px){.app{padding:8px}.topbar{padding:17px;display:block}.top-actions{margin-top:12px}.layout{display:flex;flex-direction:column}.workspace{order:1}.left{order:2}.right{order:3}.preview-wrap{min-height:520px;padding:10px}.feature-grid{grid-template-columns:1fr}.right .panel{display:block}.row,.row3{grid-template-columns:1fr}.pages-preview{width:100%}.page-preview{transform-origin:top center}}
+
+
+/* ===== ARnc Full Gradient Visual Upgrade — UI only ===== */
+:root{
+  --ui-gradient-main: linear-gradient(135deg,#eef2ff 0%,#e0e7ff 28%,#dbeafe 55%,#f0fdfa 78%,#fae8ff 100%);
+  --ui-gradient-card: linear-gradient(145deg,rgba(255,255,255,.96) 0%,rgba(239,246,255,.94) 42%,rgba(250,245,255,.95) 100%);
+  --ui-gradient-panel: linear-gradient(145deg,rgba(255,255,255,.98) 0%,rgba(224,242,254,.94) 52%,rgba(245,243,255,.96) 100%);
+  --ui-gradient-input: linear-gradient(135deg,#ffffff 0%,#eff6ff 50%,#faf5ff 100%);
+  --ui-gradient-feature: linear-gradient(145deg,#ffffff 0%,#eef2ff 48%,#fdf2f8 100%);
+  --ui-gradient-thumb: linear-gradient(135deg,#ffffff 0%,#eff6ff 55%,#f5f3ff 100%);
+  --ui-gradient-upload: linear-gradient(135deg,#eff6ff 0%,#e0f2fe 45%,#f5f3ff 100%);
+  --ui-gradient-btn: linear-gradient(135deg,#2563eb 0%,#4f46e5 48%,#9333ea 100%);
+  --ui-gradient-btn-alt: linear-gradient(135deg,#ffffff 0%,#dbeafe 50%,#f3e8ff 100%);
+  --ui-gradient-note: linear-gradient(135deg,#f8fafc 0%,#eef2ff 50%,#fdf4ff 100%);
+}
+
+body{
+  background:var(--ui-gradient-main);
+  background-attachment:fixed;
+}
+
+.app{
+  position:relative;
+}
+
+.card{
+  background:var(--ui-gradient-card);
+  border-color:rgba(99,102,241,.18);
+}
+
+.panel{
+  background:var(--ui-gradient-panel);
+  border-radius:calc(var(--radius) - 2px);
+}
+
+.btn{
+  background:var(--ui-gradient-btn-alt);
+  border-color:rgba(79,70,229,.18);
+  box-shadow:0 5px 16px rgba(79,70,229,.08);
+}
+
+.btn.primary{
+  background:var(--ui-gradient-btn);
+  border-color:transparent;
+  box-shadow:0 7px 18px rgba(79,70,229,.22);
+}
+
+.btn.dark{
+  background:linear-gradient(135deg,#111827 0%,#312e81 55%,#581c87 100%);
+  border-color:transparent;
+}
+
+.btn.danger{
+  background:linear-gradient(135deg,#fee2e2 0%,#fce7f3 55%,#ede9fe 100%);
+}
+
+.btn:hover{
+  filter:saturate(1.08);
+  box-shadow:0 8px 22px rgba(79,70,229,.15);
+}
+
+.upload{
+  background:var(--ui-gradient-upload);
+  border-color:#818cf8;
+  box-shadow:inset 0 0 24px rgba(99,102,241,.06);
+}
+
+input[type=text],input[type=number],select,textarea{
+  background:var(--ui-gradient-input);
+  border-color:rgba(99,102,241,.20);
+}
+
+input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{
+  border-color:#6366f1;
+  box-shadow:0 0 0 3px rgba(99,102,241,.10);
+}
+
+.preview-wrap{
+  background:linear-gradient(135deg,#e0e7ff 0%,#dbeafe 38%,#e0f2fe 68%,#f3e8ff 100%);
+}
+
+.thumb{
+  background:var(--ui-gradient-thumb);
+  border-color:rgba(99,102,241,.16);
+}
+
+.thumb.active{
+  border-color:#6366f1;
+  background:linear-gradient(135deg,#dbeafe 0%,#e0e7ff 48%,#f3e8ff 100%);
+}
+
+.iconbtn{
+  background:linear-gradient(135deg,#eef2ff 0%,#dbeafe 55%,#f3e8ff 100%);
+}
+
+.feature{
+  background:var(--ui-gradient-feature);
+  border-color:rgba(99,102,241,.16);
+}
+
+.note{
+  background:var(--ui-gradient-note);
+  border:1px solid rgba(99,102,241,.10);
+}
+
+.topbar{
+  background:linear-gradient(135deg,#111827 0%,#1d4ed8 34%,#4f46e5 65%,#9333ea 100%);
+}
+
+.feature-grid + .card,
+section.card{
+  background:var(--ui-gradient-card);
+}
+
+footer{
+  background:linear-gradient(135deg,rgba(224,231,255,.55),rgba(243,232,255,.55),rgba(224,242,254,.55));
+  border-radius:16px;
+}
+
+/* Keep the actual PDF pages/document appearance unchanged. */
+.page-preview{
+  background:#fff;
+}
+
+/* Theme-specific gradient surfaces */
+body.theme-dark{
+  --ui-gradient-main:linear-gradient(135deg,#020617 0%,#0f172a 40%,#172554 72%,#312e81 100%);
+  --ui-gradient-card:linear-gradient(145deg,rgba(15,23,42,.97) 0%,rgba(23,37,84,.96) 52%,rgba(49,46,129,.92) 100%);
+  --ui-gradient-panel:linear-gradient(145deg,rgba(15,23,42,.98),rgba(23,37,84,.96),rgba(49,46,129,.92));
+  --ui-gradient-input:linear-gradient(135deg,#0f172a,#172554,#1e1b4b);
+  --ui-gradient-feature:linear-gradient(145deg,#0f172a,#172554,#312e81);
+  --ui-gradient-thumb:linear-gradient(135deg,#0f172a,#172554,#312e81);
+  --ui-gradient-upload:linear-gradient(135deg,#0c2745,#172554,#312e81);
+  --ui-gradient-note:linear-gradient(135deg,#111827,#172554,#312e81);
+}
+
+body.theme-ocean{
+  --ui-gradient-main:linear-gradient(135deg,#cffafe 0%,#dbeafe 38%,#e0f2fe 68%,#ecfeff 100%);
+  --ui-gradient-card:linear-gradient(145deg,#ffffff,#ecfeff,#dbeafe);
+  --ui-gradient-panel:linear-gradient(145deg,#ffffff,#cffafe,#dbeafe);
+  --ui-gradient-feature:linear-gradient(145deg,#ffffff,#ecfeff,#e0f2fe);
+}
+
+body.theme-sunset{
+  --ui-gradient-main:linear-gradient(135deg,#fff7ed 0%,#fef2f2 38%,#fce7f3 68%,#ede9fe 100%);
+  --ui-gradient-card:linear-gradient(145deg,#ffffff,#fff7ed,#fce7f3);
+  --ui-gradient-panel:linear-gradient(145deg,#ffffff,#ffedd5,#fce7f3);
+  --ui-gradient-feature:linear-gradient(145deg,#ffffff,#fff7ed,#fce7f3);
+}
+
+body.theme-emerald{
+  --ui-gradient-main:linear-gradient(135deg,#ecfdf5 0%,#d1fae5 38%,#cffafe 68%,#ecfeff 100%);
+  --ui-gradient-card:linear-gradient(145deg,#ffffff,#ecfdf5,#d1fae5);
+  --ui-gradient-panel:linear-gradient(145deg,#ffffff,#d1fae5,#cffafe);
+  --ui-gradient-feature:linear-gradient(145deg,#ffffff,#ecfdf5,#d1fae5);
+}
+
+</style>
+
+<style id="full-colorful-ui">
+/* ===== FULL COLORFUL UI UPGRADE =====
+   Keeps the original PDF page white so exported PDF appearance is unchanged.
+*/
+html, body {
+  min-height: 100%;
+}
+body {
+  color: #f8fafc !important;
+  background:
+    radial-gradient(circle at 4% 8%, rgba(244,63,94,.45), transparent 24%),
+    radial-gradient(circle at 96% 7%, rgba(6,182,212,.42), transparent 25%),
+    radial-gradient(circle at 10% 92%, rgba(168,85,247,.42), transparent 28%),
+    radial-gradient(circle at 94% 92%, rgba(16,185,129,.38), transparent 28%),
+    linear-gradient(135deg,#111827 0%,#312e81 24%,#075985 48%,#0f766e 70%,#7c2d92 100%) !important;
+  background-attachment: fixed !important;
+}
+
+.app {
+  background: transparent !important;
+}
+
+.topbar {
+  background:
+    linear-gradient(90deg,
+      rgba(30,27,75,.98),
+      rgba(67,56,202,.96),
+      rgba(14,116,144,.96),
+      rgba(126,34,206,.98)) !important;
+  border-color: rgba(255,255,255,.24) !important;
+  box-shadow: 0 14px 40px rgba(0,0,0,.28) !important;
+}
+
+.brand h1, .brand p {
+  color: #fff !important;
+}
+
+.layout {
+  background: transparent !important;
+}
+
+.left {
+  background:
+    linear-gradient(145deg,
+      rgba(30,64,175,.98),
+      rgba(79,70,229,.97) 45%,
+      rgba(126,34,206,.96)) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  box-shadow: 0 18px 45px rgba(30,27,75,.35) !important;
+}
+
+.workspace {
+  background:
+    linear-gradient(145deg,
+      rgba(8,47,73,.98),
+      rgba(14,116,144,.97) 45%,
+      rgba(37,99,235,.96)) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  box-shadow: 0 18px 45px rgba(8,47,73,.35) !important;
+}
+
+.right {
+  background:
+    linear-gradient(145deg,
+      rgba(88,28,135,.98),
+      rgba(126,34,206,.96) 45%,
+      rgba(219,39,119,.94)) !important;
+  border-color: rgba(255,255,255,.25) !important;
+  box-shadow: 0 18px 45px rgba(88,28,135,.35) !important;
+}
+
+.panel, .card, .settings, .upload-card {
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.16),
+      rgba(255,255,255,.07)) !important;
+  border-color: rgba(255,255,255,.27) !important;
+  box-shadow: 0 12px 30px rgba(0,0,0,.18) !important;
+  backdrop-filter: blur(12px);
+}
+
+.panel h2, .panel h3, .field label, .status,
+.note, .panel p {
+  color: #fff !important;
+}
+
+.upload {
+  background:
+    linear-gradient(135deg,#06b6d4 0%,#2563eb 42%,#7c3aed 75%,#db2777 100%) !important;
+  color: #fff !important;
+  border: 2px dashed rgba(255,255,255,.82) !important;
+  box-shadow: 0 14px 32px rgba(37,99,235,.35) !important;
+}
+
+.upload strong, .upload span, .upload small {
+  color: #fff !important;
+}
+
+.upload:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08) saturate(1.12);
+}
+
+.thumbs {
+  background: rgba(15,23,42,.24) !important;
+  border-color: rgba(255,255,255,.18) !important;
+}
+
+.thumb {
+  background: linear-gradient(135deg,#0ea5e9,#6366f1,#a855f7) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.32) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.2) !important;
+}
+
+.thumb.active {
+  background: linear-gradient(135deg,#f97316,#ec4899,#8b5cf6) !important;
+  border-color: #fff !important;
+}
+
+.preview-wrap {
+  background:
+    radial-gradient(circle at 15% 20%, rgba(6,182,212,.32), transparent 25%),
+    radial-gradient(circle at 85% 80%, rgba(236,72,153,.30), transparent 28%),
+    linear-gradient(135deg,#020617,#172554,#312e81,#581c87) !important;
+  border-color: rgba(255,255,255,.26) !important;
+}
+
+.page-preview {
+  background: #fff !important;
+  color: #111827 !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,.48) !important;
+}
+
+.btn {
+  color: #fff !important;
+  border-color: rgba(255,255,255,.28) !important;
+  background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+  box-shadow: 0 8px 20px rgba(37,99,235,.24) !important;
+}
+
+.btn:hover {
+  filter: brightness(1.1) saturate(1.12);
+  transform: translateY(-1px);
+}
+
+.btn.primary {
+  background: linear-gradient(135deg,#06b6d4,#2563eb,#7c3aed) !important;
+}
+
+.btn.danger {
+  background: linear-gradient(135deg,#ef4444,#e11d48,#db2777) !important;
+}
+
+.btn.secondary {
+  background: linear-gradient(135deg,#475569,#6366f1) !important;
+}
+
+input, select, textarea {
+  color: #111827 !important;
+  background:
+    linear-gradient(135deg,#dbeafe,#f5d0fe,#ccfbf1) !important;
+  border-color: rgba(255,255,255,.62) !important;
+  box-shadow: inset 0 1px 5px rgba(15,23,42,.10) !important;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: 2px solid rgba(255,255,255,.85) !important;
+  box-shadow: 0 0 0 4px rgba(59,130,246,.28) !important;
+}
+
+.feature-grid .feature:nth-child(1) {
+  background: linear-gradient(135deg,#06b6d4,#2563eb) !important;
+}
+.feature-grid .feature:nth-child(2) {
+  background: linear-gradient(135deg,#f97316,#ec4899) !important;
+}
+.feature-grid .feature:nth-child(3) {
+  background: linear-gradient(135deg,#10b981,#06b6d4) !important;
+}
+.feature-grid .feature:nth-child(4) {
+  background: linear-gradient(135deg,#6366f1,#8b5cf6) !important;
+}
+.feature-grid .feature:nth-child(5) {
+  background: linear-gradient(135deg,#f59e0b,#ef4444) !important;
+}
+.feature-grid .feature:nth-child(6) {
+  background: linear-gradient(135deg,#3b82f6,#9333ea) !important;
+}
+.feature-grid .feature {
+  color: #fff !important;
+  border-color: rgba(255,255,255,.28) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.20) !important;
+}
+.feature-grid .feature * {
+  color: #fff !important;
+}
+
+footer, .footer {
+  background:
+    linear-gradient(90deg,
+      rgba(30,27,75,.98),
+      rgba(67,56,202,.96),
+      rgba(14,116,144,.96),
+      rgba(126,34,206,.98)) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.24) !important;
+}
+
+footer *, .footer * {
+  color: #fff !important;
+}
+
+.badge, .tag, .chip {
+  background: linear-gradient(135deg,#f97316,#ec4899,#8b5cf6) !important;
+  color: #fff !important;
+  border-color: rgba(255,255,255,.35) !important;
+}
+
+hr {
+  border-color: rgba(255,255,255,.22) !important;
+}
+
+::selection {
+  background: #f472b6;
+  color: #fff;
+}
+
+/* Keep the actual PDF preview page neutral/white. */
+.page-preview,
+.page-preview * {
+  --card: #fff;
+}
+</style>
+
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><h1>📄 Image to PDF Studio <span style="opacity:.7">ARnc</span></h1><p>Professional browser-based image → PDF workspace</p></div>
+  <div class="top-actions">
+    <button class="btn" id="addBtn">＋ Add Images</button>
+    <button class="btn" id="themeBtn">🎨 Theme</button>
+    <button class="btn dark" id="clearBtn">Clear All</button>
+    <button class="btn primary" id="makePdfBtn">⬇ Create PDF</button>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="card left">
+<div class="panel">
+  <div class="upload" id="dropZone">
+    <div class="drop-icon">🖼️</div><strong>Drop images here</strong><small>JPG, JPEG, PNG, WEBP, GIF, BMP</small><br><br>
+    <button class="btn primary" id="browseBtn">Choose Images</button>
+    <input id="fileInput" type="file" accept="image/*" multiple>
+  </div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
+    <h2 style="margin:0">Pages <span id="countBadge">(0)</span></h2>
+    <button class="btn" id="sortBtn">Sort A–Z</button>
+  </div>
+  <div class="thumbs" id="thumbs"><div class="note">Add images to start. Drag/drop is supported.</div></div>
+  <div class="note">Tip: Drag pages to reorder them. The order here becomes the PDF page order.</div>
+</div>
+</aside>
+
+<main class="card workspace">
+  <div class="toolbar">
+    <div><b>Live PDF Preview</b><div class="status" id="status">No images loaded</div></div>
+    <div class="tools">
+      <button class="btn" id="prevBtn">←</button><button class="btn" id="nextBtn">→</button>
+      <button class="btn" id="rotateLeft">↶ Rotate</button><button class="btn" id="rotateRight">↷ Rotate</button>
+    </div>
+  </div>
+  <div class="preview-wrap" id="previewWrap">
+    <div class="pages-preview" id="pagesPreview"><div class="empty"><b>Your PDF preview will appear here</b><br>Upload one or more images.</div></div>
+  </div>
+</main>
+
+<aside class="card right">
+<div class="panel">
+<h2>⚙ PDF Settings</h2>
+<h3>Page</h3>
+<div class="field"><label>Page Size</label><select id="pageSize">
+<option value="a4">A4</option><option value="a3">A3</option><option value="a5">A5</option><option value="letter">Letter</option><option value="legal">Legal</option><option value="fit">Fit to Image</option></select></div>
+<div class="field"><label>Orientation</label><select id="orientation"><option value="auto">Auto per image</option><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
+<div class="field"><label>Margins (mm)</label><div class="row"><input id="margin" type="number" min="0" max="40" value="10"><select id="fitMode"><option value="contain">Fit inside page</option><option value="cover">Fill page</option><option value="original">Original ratio</option></select></div></div>
+<div class="check"><input id="onePage" type="checkbox"><label for="onePage">Put all selected images on one PDF page</label></div>
+
+<h3>Image</h3>
+<div class="field"><label>JPEG Quality</label><div class="range-line"><input id="quality" type="range" min="0.35" max="1" step=".05" value=".9"><span class="value" id="qualityVal">90%</span></div></div>
+<div class="field"><label>Image rotation</label><select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></div>
+<div class="check"><input id="grayscale" type="checkbox"><label for="grayscale">Convert images to grayscale</label></div>
+<div class="check"><input id="enhance" type="checkbox"><label for="enhance">Light contrast enhancement</label></div>
+
+<h3>Watermark</h3>
+<div class="check"><input id="watermarkOn" type="checkbox"><label for="watermarkOn">Enable watermark</label></div>
+<div class="field"><input id="watermark" type="text" value="Image to PDF • ARnc" placeholder="Watermark text"></div>
+<div class="row">
+<div class="field"><label>Opacity</label><input id="wmOpacity" type="number" min="0" max="1" step=".05" value=".18"></div>
+<div class="field"><label>Size</label><input id="wmSize" type="number" min="8" max="100" value="28"></div>
+</div>
+
+<h3>Header / Footer</h3>
+<div class="field"><input id="header" type="text" placeholder="Header text"></div>
+<div class="field"><input id="footer" type="text" placeholder="Footer text"></div>
+<div class="check"><input id="pageNumbers" type="checkbox" checked><label for="pageNumbers">Page numbers</label></div>
+
+<h3>🎨 Theme</h3>
+<div class="field"><label>Website theme</label><select id="themeSelect">
+<option value="light">Classic Gradient</option>
+<option value="ocean">Ocean Gradient</option>
+<option value="sunset">Sunset Gradient</option>
+<option value="emerald">Emerald Gradient</option>
+<option value="dark">Dark Gradient</option>
+</select></div>
+
+<h3>Security & metadata</h3>
+<div class="field"><label>PDF title</label><input id="pdfTitle" type="text" value="My Image PDF"></div>
+<div class="field"><label>Author</label><input id="author" type="text" placeholder="Your name / website"></div>
+
+<div class="note">All image processing and PDF generation happen in your browser. Images are not uploaded to a server by this page.</div>
+</div>
+</aside>
+</div>
+
+<section class="feature-grid">
+<div class="feature"><b>📚 Multi-image PDF</b><p>Combine many images into one professionally ordered PDF.</p></div>
+<div class="feature"><b>↕ Page Organizer</b><p>Reorder, remove, rotate and navigate pages before export.</p></div>
+<div class="feature"><b>📐 Page Control</b><p>A3, A4, A5, Letter, Legal, automatic orientation and custom margins.</p></div>
+<div class="feature"><b>🎨 Image Processing</b><p>Quality control, grayscale and light enhancement options.</p></div>
+<div class="feature"><b>© Watermark</b><p>Add custom watermark text with opacity and size control.</p></div>
+<div class="feature"><b>🔢 Header & Footer</b><p>Add document labels and automatic page numbering.</p></div>
+</section>
+
+<section class="card" style="margin-top:18px">
+<div class="panel">
+<h2>📘 About Image to PDF Studio ARnc</h2>
+<div style="font-size:13px;line-height:1.75;color:var(--muted)">
+<p><b>Image to PDF Studio ARnc</b> is a browser-based document creation workspace designed to turn photographs, scanned pages, screenshots, certificates, receipts, notes and other supported image files into an organized PDF document. The purpose of the website is to make a common document-conversion task simple while still providing the controls normally expected from a professional utility. Instead of forcing a user to upload every image to an external processing service, the application is designed around local browser processing. This makes it convenient for everyday work where a user wants to select images, arrange them, adjust page presentation and create a PDF without maintaining a separate server application.</p>
+<p>The website supports multiple images in one session. Images can be selected together or added in more than one batch, and the page organizer keeps the selected files in a visible order. A user can remove an unwanted image, move an image upward or downward, or drag pages into a different sequence. This is important when the images represent a multi-page document because the order of the source files directly affects the reading order of the resulting PDF. The live preview provides a visual way to review the document before export.</p>
+<p>Page presentation is configurable. Users can choose common paper formats such as A4, A3, A5, Letter and Legal, or use a fit-to-image mode. Orientation can be selected as portrait, landscape or automatic. Margins can be adjusted so that an image does not sit too close to the edge. The image fitting controls are designed to preserve the visual proportions of the source rather than unexpectedly stretching the content. A fill mode is also available when a page-filling presentation is preferred.</p>
+<p>Image controls provide practical export choices. JPEG quality can be adjusted to balance visual quality and file size. Grayscale can be enabled for documents that do not require color, and a light enhancement option can improve the appearance of some ordinary photographs and scans. Individual pages can be rotated, which is useful when a camera captured one page sideways. Rotation is applied during PDF generation so that the exported image follows the selected orientation rather than relying only on a temporary screen preview.</p>
+<p>Professional document features are also included. A custom watermark can be added with adjustable opacity and size. Header and footer text can be placed on exported pages, and automatic page numbering can help readers navigate longer documents. PDF title and author metadata can be entered before creation. A one-page composition mode can place the selected images together on a single PDF page, which is useful for contact sheets, image collections and compact visual summaries.</p>
+<p>The interface includes a theme system so that the same workspace can be viewed in different visual styles. Classic, Ocean, Sunset, Emerald and Dark gradients are available. The selected theme is remembered in the browser, so the visual preference remains available on the next visit on the same browser. The theme changes the presentation layer and does not intentionally remove or disable the PDF controls.</p>
+<p>Mobile responsiveness is an important part of the design. On narrower screens the workspace, image list and settings are rearranged vertically so that controls remain accessible rather than being hidden off-screen. The preview area can scroll when a page is larger than the available viewport. On desktop screens the three-column workspace gives quick access to pages, preview and settings at the same time.</p>
+<p>The application does not require a dedicated backend for its core conversion workflow. The PDF library is loaded in the browser and the selected image data is processed by the page. Because browser capabilities and file formats can vary between devices, very large image collections may consume substantial memory. For that reason, users working with hundreds of very large photographs may get better performance by dividing the work into smaller PDF documents. The application is intended to remain practical for normal document and image conversion sessions.</p>
+<p>Image to PDF Studio ARnc is therefore designed as more than a simple upload-and-download converter. It combines image selection, page organization, visual review, page sizing, image quality controls, rotation, watermarking, metadata and theme customization in one interface. The goal is to provide a clear workflow: add images, arrange them, review the result, adjust settings when necessary and create the final PDF. Users should always review the generated document before sharing it, particularly when the source images contain small text, important signatures or other details where visual accuracy matters.</p>
+<p>The website can be extended in the future with additional document features such as custom page dimensions, more advanced compression profiles, password protection where supported by the PDF engine, richer annotation tools, saved presets and additional output formats. The current version intentionally focuses on the image-to-PDF workflow while keeping the interface straightforward and usable. Its local-first architecture also provides a useful foundation for privacy-conscious document conversion because the core image data does not need to be sent to an application server simply to assemble the PDF.</p>
+<p>For routine workflows, the preview and the final PDF should be treated as two stages of the same review process. The preview is useful for checking page order, rotation, spacing and visible labels, while the generated PDF is the final file that should be opened and checked before printing or sharing. This is especially useful for scanned documents, where a source image may look acceptable at thumbnail size but contain small text that deserves a closer inspection at full resolution. The application gives the user control over the important presentation choices without automatically replacing the original files.</p>
+<p>In short, Image to PDF Studio ARnc is intended for students, office users, small businesses, creators, photographers, teachers and anyone who needs a practical way to combine images into a PDF. The application brings the most frequently needed controls into one workspace while keeping the workflow understandable. Select your images, arrange the pages, choose the page format and quality, optionally add branding or document information, check the preview, and then create the PDF.</p>
+</div>
+</div>
+</section>
+
+<section class="card" style="margin-top:18px">
+<div class="panel">
+<h2>🔒 Privacy Information</h2>
+<div style="font-size:13px;line-height:1.75;color:var(--muted)">
+<p><b>Privacy is an important design consideration for Image to PDF Studio ARnc.</b> The core purpose of this website is to convert images into PDF documents in the user's browser. In the normal workflow provided by this HTML application, selected image files are read by the browser and processed locally for preview and PDF creation. The application does not need to upload the selected images to an ARnc conversion server to perform the basic conversion. This local-processing approach can reduce the amount of personal document data that needs to leave the user's device.</p>
+<p>Users should nevertheless understand that browser-based privacy depends on the environment in which the website is opened. The HTML application loads the jsPDF library from a public content-delivery network when an internet connection is available. The external library is used for PDF generation and is not the same thing as sending every selected image to a conversion server. Users should also consider browser extensions, security software, operating-system services and other third-party software installed on their device, because those systems operate outside the control of this application.</p>
+<p>Image files selected through the file picker are used by the page to create temporary browser object URLs and to render previews. These object URLs are intended for the current browser session and are not a permanent online file-storage system. When the user clears the workspace or closes the page, the application does not provide a built-in cloud gallery from which the original images can later be retrieved. Users should keep their original files safely stored in their own normal storage locations if they need them later.</p>
+<p>The generated PDF is saved to the user's device through the browser's download mechanism. The application does not maintain a server-side copy of that PDF as part of the basic conversion workflow. Users are responsible for choosing a safe destination for downloaded documents and for protecting documents after download. If a PDF contains sensitive information, it should be stored, transferred and shared using appropriate security practices.</p>
+<p>Users should avoid entering confidential information into fields that are not required for the task. The optional PDF title, author, header, footer and watermark fields are included to help users create a professional document. Information entered into those fields can become part of the generated PDF or its visible content. For example, an author name may be embedded in PDF metadata, while a watermark or footer may be visible on every page. Users should review these fields before export if the document will be shared publicly.</p>
+<p>The theme preference is stored locally in the browser using localStorage so that the selected visual theme can be remembered. This preference is not intended to contain document images or the contents of uploaded files. Clearing the browser's site data can remove such locally stored preferences. Private browsing modes, browser restrictions and privacy settings may also affect local storage behavior.</p>
+<p>The application does not require an account, password or profile for its basic image-to-PDF function. There is therefore no core account database required simply to select images and generate a PDF. If a future version adds optional accounts, analytics, cloud storage, advertisements or external services, the privacy notice should be updated to describe those services, the information they collect, why it is collected and how users can manage it. Users should rely on the privacy notice that is actually published with the specific version of the website they are using.</p>
+<p>Third-party resources deserve separate attention. The PDF engine is loaded from a public CDN, and network requests made to retrieve such resources may expose ordinary technical information such as an IP address to the infrastructure providing that resource, according to the provider's own policies. This is different from uploading the user's selected images for conversion. Users who require a completely offline workflow can modify the website to bundle the required library locally rather than loading it from a CDN, provided the relevant library licensing and distribution requirements are followed.</p>
+<p>Security cannot be guaranteed absolutely by any website or browser application. Users should keep their operating system and browser updated, use trusted devices, avoid opening unknown HTML files from untrusted sources, and use appropriate antivirus or endpoint security controls. If a device is compromised, local documents and browser data may be exposed regardless of whether a particular converter uses local processing.</p>
+<p>The privacy approach of this application is therefore based on data minimization for the core conversion task: process selected images locally, avoid unnecessary server storage, and let the browser create the PDF on the user's device. This does not mean that every network event surrounding the page disappears, because external libraries or the hosting environment may still generate ordinary technical requests. The distinction between document processing and website infrastructure should be kept clear.</p>
+<p>Users remain responsible for the legality and appropriateness of the images and documents they process. Do not use the service to process content that you are not authorized to possess or convert. If a document contains another person's personal information, financial information, identification information, confidential business information or other protected material, use appropriate care before sharing the resulting PDF.</p>
+<p>If this website is published commercially, the site owner should replace this general privacy information with a jurisdiction-specific privacy policy that accurately describes the actual hosting provider, CDN, analytics, cookies, advertising services, contact methods and any other third-party integrations used on the live site. The final policy should not claim that information is never collected if the production website uses services that collect it. Users should always have access to the current policy from the published website.</p>
+<p>By using the conversion workflow, users can make their own decision about whether the browser-based processing model is appropriate for their particular documents. For highly sensitive or regulated records, users should follow the security and privacy requirements applicable to their organization and jurisdiction and should verify the behavior of the exact deployed website rather than relying solely on a generic description.</p>
+<p>This privacy information is provided as a practical explanation of the current browser-based design. It is not a substitute for legal advice and should be reviewed by the website owner before publication as an official legal privacy policy. If the website's technical architecture changes—for example, if server-side conversion, analytics, cloud storage, login, advertising or other external processing is added—the privacy information should be revised accordingly.
+____
+
+Contact us:
+Website: Image to PDF Studio.ARnc
+Privacy / Support Email: subham99209114@gmail.com
+Contact no: 7544095688
+</p>
+</div>
+</div>
+</section>
+<footer>Image to PDF Studio ARnc • Local browser processing • No backend required • Please review the privacy information before publishing as a legal policy.</footer>
+</div>
+
+<script>
+(() => {
+const { jsPDF } = window.jspdf;
+const $ = id => document.getElementById(id);
+let pages=[], active=0, dragIndex=null;
+
+const settingsIds=['pageSize','orientation','margin','fitMode','onePage','quality','rotation','grayscale','enhance','watermarkOn','watermark','wmOpacity','wmSize','header','footer','pageNumbers','pdfTitle','author'];
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function readSettings(){let s={};settingsIds.forEach(id=>{let e=$(id);s[id]=e.type==='checkbox'?e.checked:e.value});return s}
+function imgFromFile(file){
+ return new Promise((resolve,reject)=>{
+   const url=URL.createObjectURL(file), img=new Image();
+   img.onload=()=>{resolve({file,url,img,name:file.name,width:img.naturalWidth,height:img.naturalHeight,rotation:0});};
+   img.onerror=()=>reject(new Error('Cannot read '+file.name)); img.src=url;
+ });
+}
+async function addFiles(files){
+ const arr=[...files].filter(f=>f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp|svg)$/i.test(f.name));
+ for(const f of arr){try{pages.push(await imgFromFile(f))}catch(e){console.warn(e)}}
+ active=Math.min(active,pages.length-1); render();
+}
+function renderThumbs(){
+ $('countBadge').textContent='('+pages.length+')';
+ if(!pages.length){$('thumbs').innerHTML='<div class="note">Add images to start. Drag/drop is supported.</div>';return}
+ $('thumbs').innerHTML=pages.map((p,i)=>`
+ <div class="thumb ${i===active?'active':''}" draggable="true" data-i="${i}">
+   <img src="${p.url}">
+   <div class="thumb-info"><b>${escapeHtml(p.name)}</b><small>${p.width} × ${p.height}px</small></div>
+   <div><button class="iconbtn" data-act="up" data-i="${i}">↑</button><button class="iconbtn" data-act="down" data-i="${i}">↓</button><button class="iconbtn" data-act="del" data-i="${i}">×</button></div>
+ </div>`).join('');
+ document.querySelectorAll('.thumb').forEach(el=>{
+   el.addEventListener('click',e=>{if(!e.target.dataset.act){active=+el.dataset.i;render()}});
+   el.addEventListener('dragstart',()=>dragIndex=+el.dataset.i);
+   el.addEventListener('dragover',e=>e.preventDefault());
+   el.addEventListener('drop',e=>{e.preventDefault();const to=+el.dataset.i;if(dragIndex===null||dragIndex===to)return;const x=pages.splice(dragIndex,1)[0];pages.splice(to,0,x);active=to;dragIndex=null;render()});
+ });
+ document.querySelectorAll('[data-act]').forEach(b=>b.onclick=e=>{
+   e.stopPropagation();const i=+b.dataset.i,a=b.dataset.act;
+   if(a==='del'){URL.revokeObjectURL(pages[i].url);pages.splice(i,1);active=pages.length?Math.max(0,Math.min(active,pages.length-1)):0}
+   if(a==='up'&&i>0){[pages[i-1],pages[i]]=[pages[i],pages[i-1]];active=i-1}
+   if(a==='down'&&i<pages.length-1){[pages[i+1],pages[i]]=[pages[i],pages[i+1]];active=i+1}
+   render();
+ });
+}
+function pageDims(s,p){
+ const sizes={a4:[210,297],a3:[297,420],a5:[148,210],letter:[215.9,279.4],legal:[215.9,355.6]};
+ const [rw,rh]=rotatedImageSize(p,s);
+ if(s.pageSize==='fit') return [rw/3.78,rh/3.78];
+ let d=sizes[s.pageSize]||sizes.a4;
+ let ori=s.orientation;
+ if(ori==='auto') ori=rw>=rh?'landscape':'portrait';
+ return ori==='landscape'?[Math.max(...d),Math.min(...d)]:[Math.min(...d),Math.max(...d)];
+}
+function effectiveRotation(p,s){ return ((Number(p.rotation||0)+Number(s.rotation||0))%360+360)%360; }
+function rotatedImageSize(p,s){
+ const r=effectiveRotation(p,s);
+ return (r===90||r===270)?[p.height,p.width]:[p.width,p.height];
+}
+function calcPlacement(p,s,pw,ph){
+ const m=Math.max(0,Number(s.margin)||0), aw=Math.max(1,pw-2*m), ah=Math.max(1,ph-2*m);
+ const [iw0,ih0]=rotatedImageSize(p,s), ratio=iw0/ih0;
+ let iw,ih;
+ if(s.fitMode==='cover'){
+   if(aw/ah > ratio){ iw=aw; ih=aw/ratio; }
+   else { ih=ah; iw=ah*ratio; }
+ } else {
+   iw=aw; ih=iw/ratio;
+   if(ih>ah){ih=ah;iw=ih*ratio;}
+ }
+ return {m,aw,ah,iw,ih,x:m+(aw-iw)/2,y:m+(ah-ih)/2};
+}
+function renderPreview(){
+ const s=readSettings(), wrap=$('pagesPreview');
+ if(!pages.length){wrap.innerHTML='<div class="empty"><b>Your PDF preview will appear here</b><br>Upload one or more images.</div>';return}
+ wrap.innerHTML='';
+ const shown=s.onePage?pages:pages;
+ if(s.onePage){
+   const d=pageDims(s,pages[0]), [pw,ph]=d, scale=Math.min(1,700/pw);
+   const el=document.createElement('div');el.className='page-preview';el.style.width=(pw*scale)+'px';el.style.height=(ph*scale)+'px';
+   const cols=Math.ceil(Math.sqrt(shown.length)), rows=Math.ceil(shown.length/cols);
+   const cellW=(pw-2*Number(s.margin))/cols, cellH=(ph-2*Number(s.margin))/rows;
+   shown.forEach((p,i)=>{
+     const [iw0,ih0]=rotatedImageSize(p,s), ratio=iw0/ih0;
+     let iw=cellW*.92,ih=cellH*.92;
+     if(s.fitMode!=='cover'){iw=cellW*.92;ih=iw/ratio;if(ih>cellH*.92){ih=cellH*.92;iw=ih*ratio}}
+     const cellX=Number(s.margin)+(i%cols)*cellW,cellY=Number(s.margin)+Math.floor(i/cols)*cellH;
+     const img=document.createElement('img');img.src=p.url;img.style.left=((cellX+(cellW-iw)/2)*scale)+'px';img.style.top=((cellY+(cellH-ih)/2)*scale)+'px';img.style.width=(iw*scale)+'px';img.style.height=(ih*scale)+'px';img.style.objectFit=s.fitMode==='cover'?'cover':'contain';img.style.transform=`rotate(${effectiveRotation(p,s)}deg)`;
+     if(s.grayscale)img.style.filter='grayscale(1)'; if(s.enhance)img.style.filter=(img.style.filter?'grayscale(1) ':'')+'contrast(1.08) brightness(1.03)'; el.appendChild(img);
+   });
+   wrap.appendChild(el); return;
+ }
+ shown.forEach((p,pi)=>{
+   const [pw,ph]=pageDims(s,p), scale=Math.min(1,700/pw), el=document.createElement('div');
+   el.className='page-preview';el.style.width=(pw*scale)+'px';el.style.height=(ph*scale)+'px';
+   const pos=calcPlacement(p,s,pw,ph),img=document.createElement('img');img.src=p.url;
+   img.style.left=(pos.x*scale)+'px';img.style.top=(pos.y*scale)+'px';img.style.width=(pos.iw*scale)+'px';img.style.height=(pos.ih*scale)+'px';img.style.objectFit='contain';
+   if(s.fitMode==='cover')img.style.objectFit='cover'; img.style.transform=`rotate(${effectiveRotation(p,s)}deg)`;
+   if(s.grayscale)img.style.filter='grayscale(1)'; if(s.enhance)img.style.filter=(img.style.filter?'grayscale(1) ':'')+'contrast(1.08) brightness(1.03)';
+   el.appendChild(img);
+   if(s.header){const h=document.createElement('div');h.textContent=s.header;h.style.cssText=`position:absolute;top:3px;left:0;width:100%;text-align:center;font-size:${Math.max(8,9*scale)}px;color:#334155`;el.appendChild(h)}
+   if(s.footer||s.pageNumbers){const f=document.createElement('div');f.textContent=(s.footer||'')+(s.pageNumbers?`  •  ${pi+1}/${shown.length}`:'');f.style.cssText=`position:absolute;bottom:3px;left:0;width:100%;text-align:center;font-size:${Math.max(8,9*scale)}px;color:#334155`;el.appendChild(f)}
+   if(s.watermarkOn&&s.watermark){const w=document.createElement('div');w.textContent=s.watermark;w.style.cssText=`position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:${Math.max(10,Number(s.wmSize)*scale)}px;font-weight:800;color:rgba(30,41,59,${Math.max(0,Math.min(1,Number(s.wmOpacity))) });white-space:nowrap`;el.appendChild(w)}
+   wrap.appendChild(el);
+ });
+}
+function render(){renderThumbs();renderPreview();$('status').textContent=pages.length?`${pages.length} image${pages.length>1?'s':''} ready • active page ${active+1}`:'No images loaded';}
+function makeCanvas(p,s,targetRatio=null){
+ const [rw,rh]=rotatedImageSize(p,s), max=2400, scale=Math.min(max/rw,max/rh,2);
+ let srcW=Math.max(1,Math.round(rw*scale)), srcH=Math.max(1,Math.round(rh*scale));
+ const base=document.createElement('canvas'); base.width=srcW;base.height=srcH;
+ const bctx=base.getContext('2d'),r=effectiveRotation(p,s); bctx.save();
+ if(s.grayscale) bctx.filter='grayscale(1)';
+ if(s.enhance) bctx.filter+=(s.grayscale?' ':'')+'contrast(1.08) brightness(1.03)';
+ bctx.translate(srcW/2,srcH/2);bctx.rotate(r*Math.PI/180);
+ bctx.drawImage(p.img,-p.width*scale/2,-p.height*scale/2,p.width*scale,p.height*scale);bctx.restore();
+
+ if(s.fitMode==='cover' && targetRatio && isFinite(targetRatio) && targetRatio>0){
+   const current=srcW/srcH;
+   let sx=0,sy=0,sw=srcW,sh=srcH;
+   if(current>targetRatio){
+     sw=Math.max(1,Math.round(srcH*targetRatio)); sx=Math.round((srcW-sw)/2);
+   } else if(current<targetRatio){
+     sh=Math.max(1,Math.round(srcW/targetRatio)); sy=Math.round((srcH-sh)/2);
+   }
+   const crop=document.createElement('canvas'); crop.width=sw;crop.height=sh;
+   crop.getContext('2d').drawImage(base,sx,sy,sw,sh,0,0,sw,sh);
+   return crop.toDataURL('image/jpeg',Math.max(.35,Math.min(1,Number(s.quality))));
+ }
+ return base.toDataURL('image/jpeg',Math.max(.35,Math.min(1,Number(s.quality))));
+}
+
+async function createPDF(){
+ if(!pages.length){alert('Please add at least one image.');return}
+ const s=readSettings(), list=pages.slice(), first=list[0];
+ let dims=pageDims(s,first);
+ if(s.onePage){
+   const cols=Math.ceil(Math.sqrt(list.length)), rows=Math.ceil(list.length/cols);
+   dims=[dims[0],Math.max(dims[1],dims[1]*rows)];
+ }
+ const doc=new jsPDF({orientation:dims[0]>dims[1]?'landscape':'portrait',unit:'mm',format:dims});
+ doc.setProperties({title:s.pdfTitle||'Image PDF',author:s.author||'Image to PDF Studio ARnc',subject:'Image to PDF'});
+ for(let i=0;i<(s.onePage?1:list.length);i++){
+   if(i>0){const d=pageDims(s,list[i]);doc.addPage(d,d[0]>d[1]?'landscape':'portrait');dims=d}
+   const pw=dims[0],ph=dims[1];
+   if(s.onePage){
+     const cols=Math.ceil(Math.sqrt(list.length)),rows=Math.ceil(list.length/cols),m=Math.max(0,Number(s.margin)),cw=(pw-2*m)/cols,ch=(ph-2*m)/rows;
+     for(let j=0;j<list.length;j++){
+       const p=list[j], [iw0,ih0]=rotatedImageSize(p,s),ratio=iw0/ih0;
+       let iw=cw*.92,ih=iw/ratio;if(ih>ch*.92){ih=ch*.92;iw=ih*ratio}
+       const x=m+(j%cols)*cw+(cw-iw)/2,y=m+Math.floor(j/cols)*ch+(ch-ih)/2;
+       doc.addImage(makeCanvas(p,s,iw/ih),'JPEG',x,y,iw,ih,undefined,'FAST');
+     }
+   } else {
+     const p=list[i],pos=calcPlacement(p,s,pw,ph);doc.addImage(makeCanvas(p,s,pos.iw/pos.ih),'JPEG',pos.x,pos.y,pos.iw,pos.ih,undefined,'FAST');
+   }
+   if(s.header){doc.setFontSize(9);doc.setTextColor(70);doc.text(s.header,pw/2,Math.max(5,Number(s.margin)/2),{align:'center'})}
+   if(s.footer||s.pageNumbers){doc.setFontSize(9);doc.setTextColor(70);doc.text((s.footer||'')+(s.pageNumbers?`  •  ${s.onePage?'1':i+1}/${s.onePage?1:list.length}`:''),pw/2,ph-Math.max(3,Number(s.margin)/2),{align:'center'})}
+   if(s.watermarkOn&&s.watermark){
+   doc.setTextColor(40,40,40);doc.setFontSize(Number(s.wmSize));
+   const opacity=Math.max(0,Math.min(1,Number(s.wmOpacity)));
+   if(typeof doc.setGState==='function' && typeof doc.GState==='function'){
+     doc.setGState(new doc.GState({opacity}));
+     doc.text(s.watermark,pw/2,ph/2,{align:'center',angle:35});
+     doc.setGState(new doc.GState({opacity:1}));
+   } else {
+     doc.text(s.watermark,pw/2,ph/2,{align:'center',angle:35});
+   }
+ }
+ }
+ doc.save((s.pdfTitle||'image-to-pdf').replace(/[\\/:*?"<>|]+/g,'-')+'.pdf');
+}
+$('browseBtn').onclick=()=>$('fileInput').click();$('addBtn').onclick=()=>$('fileInput').click();
+$('fileInput').onchange=e=>addFiles(e.target.files);
+$('dropZone').ondragover=e=>{e.preventDefault();$('dropZone').style.borderColor='#2563eb'};
+$('dropZone').ondragleave=()=>$('dropZone').style.borderColor='#93c5fd';
+$('dropZone').ondrop=e=>{e.preventDefault();$('dropZone').style.borderColor='#93c5fd';addFiles(e.dataTransfer.files)};
+$('clearBtn').onclick=()=>{pages.forEach(p=>URL.revokeObjectURL(p.url));pages=[];active=0;render()};
+$('sortBtn').onclick=()=>{pages.sort((a,b)=>a.name.localeCompare(b.name));render()};
+$('prevBtn').onclick=()=>{if(pages.length){active=(active-1+pages.length)%pages.length;render()}};
+$('nextBtn').onclick=()=>{if(pages.length){active=(active+1)%pages.length;render()}};
+$('rotateLeft').onclick=()=>{if(pages.length){pages[active].rotation=(pages[active].rotation+270)%360;render()}};
+$('rotateRight').onclick=()=>{if(pages.length){pages[active].rotation=(pages[active].rotation+90)%360;render()}};
+$('makePdfBtn').onclick=createPDF;
+$('quality').oninput=e=>$('qualityVal').textContent=Math.round(e.target.value*100)+'%';
+settingsIds.forEach(id=>{const e=$(id);e.addEventListener('input',renderPreview);e.addEventListener('change',renderPreview)});
+function applyTheme(name){
+  document.body.classList.remove('theme-dark','theme-ocean','theme-sunset','theme-emerald');
+  if(name!=='light') document.body.classList.add('theme-'+name);
+  localStorage.setItem('arnc-pdf-theme',name); $('themeSelect').value=name;
+}
+$('themeSelect').addEventListener('change',e=>applyTheme(e.target.value));
+$('themeBtn').onclick=()=>{const names=['light','ocean','sunset','emerald','dark'];const cur=$('themeSelect').value;applyTheme(names[(names.indexOf(cur)+1)%names.length])};
+applyTheme(localStorage.getItem('arnc-pdf-theme')||'light');
+render();
+})();
+</script>
+</body>
+</html>
