@@ -12,9 +12,11 @@
 
   gtag('config', 'G-YXJCBC8P0R');
 </script>
-  
+
 <title>Image to PDF Studio.ARnc</title>
 <meta name="description" content="Advanced image to PDF converter with multi-image support, page controls, watermark, quality and professional PDF options.">
+<script src="https://unpkg.com/utif@3.1.0/UTIF.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
@@ -490,9 +492,9 @@ hr {
 <aside class="card left">
 <div class="panel">
   <div class="upload" id="dropZone">
-    <div class="drop-icon">🖼️</div><strong>Drop images here</strong><small>JPG, JPEG, PNG, WEBP, GIF, BMP</small><br><br>
+    <div class="drop-icon">🖼️</div><strong>Drop images here</strong><small>JPG, JPEG, PNG, WEBP, GIF, BMP, TIFF, HEIC/HEIF, AVIF, SVG and RAW/DNG</small><br><br>
     <button class="btn primary" id="browseBtn">Choose Images</button>
-    <input id="fileInput" type="file" accept="image/*" multiple>
+    <input id="fileInput" type="file" accept="image/*,.jpg,.jpeg,.jpe,.jfif,.png,.webp,.gif,.bmp,.dib,.tif,.tiff,.avif,.heic,.heif,.heics,.heifs,.svg,.ico,.cur,.jp2,.j2k,.jpf,.jpx,.jpm,.mj2,.raw,.dng,.cr2,.cr3,.crw,.nef,.nrw,.arw,.sr2,.srf,.orf,.rw2,.raf,.pef,.rwl,.3fr,.iiq,.x3f,.erf,.kdc,.dcr,.mrw,.mos,.mef,.ari,.bay,.cap,.cin,.dpx,.exr,.hdr,.pbm,.pgm,.ppm,.pnm,.qoi,.tga,.pcx,.dds,.psd,.psb,.xcf" multiple>
   </div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
     <h2 style="margin:0">Pages <span id="countBadge">(0)</span></h2>
@@ -632,17 +634,44 @@ let pages=[], active=0, dragIndex=null;
 const settingsIds=['pageSize','orientation','margin','fitMode','onePage','quality','rotation','grayscale','enhance','watermarkOn','watermark','wmOpacity','wmSize','header','footer','pageNumbers','pdfTitle','author'];
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
 function readSettings(){let s={};settingsIds.forEach(id=>{let e=$(id);s[id]=e.type==='checkbox'?e.checked:e.value});return s}
-function imgFromFile(file){
- return new Promise((resolve,reject)=>{
-   const url=URL.createObjectURL(file), img=new Image();
-   img.onload=()=>{resolve({file,url,img,name:file.name,width:img.naturalWidth,height:img.naturalHeight,rotation:0});};
-   img.onerror=()=>reject(new Error('Cannot read '+file.name)); img.src=url;
- });
+/* ===== Universal image loader =====
+   Existing PDF workflow is unchanged. This only broadens file acceptance and
+   adds browser-side TIFF/HEIC fallbacks when native decoding is unavailable.
+*/
+const ARNC_IMAGE_EXTENSIONS = new Set([
+  'jpg','jpeg','jpe','jfif','png','webp','gif','bmp','dib','tif','tiff','avif',
+  'heic','heif','heics','heifs','svg','ico','cur','jp2','j2k','jpf','jpx','jpm','mj2',
+  'raw','dng','cr2','cr3','crw','nef','nrw','arw','sr2','srf','orf','rw2','raf','pef','rwl',
+  '3fr','iiq','x3f','erf','kdc','dcr','mrw','mos','mef','ari','bay','cap','cin','dpx','exr',
+  'hdr','pbm','pgm','ppm','pnm','qoi','tga','pcx','dds','psd','psb','xcf'
+]);
+function arncExt(name){const m=String(name||'').toLowerCase().match(/\.([a-z0-9]+)$/);return m?m[1]:''}
+function isArncImageFile(file){return !!file && (String(file.type||'').toLowerCase().startsWith('image/') || ARNC_IMAGE_EXTENSIONS.has(arncExt(file.name)))}
+function arncBlobToDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob)})}
+function arncNativeImage(url,file){
+ return new Promise((resolve,reject)=>{const img=new Image();img.decoding='async';img.onload=()=>resolve({file,url,img,name:file.name,width:img.naturalWidth,height:img.naturalHeight,rotation:0});img.onerror=()=>reject(new Error('Cannot decode '+file.name));img.src=url;});
+}
+async function arncDecodeSpecial(file,ext){
+ if((ext==='heic'||ext==='heif'||ext==='heics'||ext==='heifs')&&window.heic2any){
+   const blob=await window.heic2any({blob:file,type:'image/png'});const out=Array.isArray(blob)?blob[0]:blob;const data=await arncBlobToDataURL(out);return arncNativeImage(data,file);
+ }
+ if((ext==='tif'||ext==='tiff')&&window.UTIF){
+   const buf=await file.arrayBuffer();const ifds=window.UTIF.decode(buf);if(!ifds.length)throw new Error('Invalid TIFF');window.UTIF.decodeImage(buf,ifds[0]);
+   const rgba=window.UTIF.toRGBA8(ifds[0]);const c=document.createElement('canvas');c.width=ifds[0].width;c.height=ifds[0].height;c.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba),c.width,c.height),0,0);
+   return arncNativeImage(c.toDataURL('image/png'),file);
+ }
+ throw new Error('No compatible decoder');
+}
+async function imgFromFile(file){
+ if(!isArncImageFile(file))throw new Error('Unsupported image extension');
+ const ext=arncExt(file.name),url=URL.createObjectURL(file);
+ try{try{return await arncNativeImage(url,file)}catch(nativeErr){return await arncDecodeSpecial(file,ext)}}finally{URL.revokeObjectURL(url)}
 }
 async function addFiles(files){
- const arr=[...files].filter(f=>f.type.startsWith('image/') || /\.(jpe?g|png|webp|gif|bmp|svg)$/i.test(f.name));
- for(const f of arr){try{pages.push(await imgFromFile(f))}catch(e){console.warn(e)}}
- active=Math.min(active,pages.length-1); render();
+ const arr=[...files].filter(isArncImageFile);let failed=0;
+ for(const f of arr){try{pages.push(await imgFromFile(f))}catch(e){failed++;console.warn(e)}}
+ active=Math.min(active,pages.length-1);render();
+ if(failed) $('status').textContent=`${pages.length} image(s) loaded • ${failed} could not be decoded`;
 }
 function renderThumbs(){
  $('countBadge').textContent='('+pages.length+')';
